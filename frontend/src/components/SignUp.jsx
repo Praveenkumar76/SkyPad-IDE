@@ -13,17 +13,36 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showRegisterPopup, setShowRegisterPopup] = useState(false);
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    // Show registration success popup
-    setShowRegisterPopup(true);
-    
-    // Navigate to dashboard after a short delay
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1500);
+    if (!email || !username || !password || password !== confirm) {
+      return alert('Please fill all fields and ensure passwords match.');
+    }
+    try {
+      setIsSubmitting(true);
+      const res = await fetch(`/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || 'Registration failed');
+      }
+      setShowRegisterPopup(true);
+      setTimeout(() => navigate('/dashboard'), 1200);
+    } catch (error) {
+      alert(error.message || 'Registration failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -66,6 +85,9 @@ const SignUp = () => {
                   type="email"
                   placeholder="Enter your email address"
                   className="w-full py-2.5 pl-10 pr-4 border-0 border-b-2 border-gray-200 focus:border-red-500 focus:outline-none focus:ring-0 bg-transparent text-gray-800 placeholder-gray-400 transition-colors duration-200"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
                 <MdEmail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
@@ -80,6 +102,9 @@ const SignUp = () => {
                   type="text"
                   placeholder="Enter your User name"
                   className="w-full py-2.5 pl-10 pr-4 border-0 border-b-2 border-gray-200 focus:border-red-500 focus:outline-none focus:ring-0 bg-transparent text-gray-800 placeholder-gray-400 transition-colors duration-200"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
                 />
                 <MdPerson className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
               </div>
@@ -94,6 +119,9 @@ const SignUp = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your Password"
                   className="w-full py-2.5 pl-10 pr-10 border-0 border-b-2 border-gray-200 focus:border-red-500 focus:outline-none focus:ring-0 bg-transparent text-gray-800 placeholder-gray-400 transition-colors duration-200"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
                 <MdLock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <button
@@ -119,6 +147,9 @@ const SignUp = () => {
                   type={showConfirm ? "text" : "password"}
                   placeholder="Confirm your Password"
                   className="w-full py-2.5 pl-10 pr-10 border-0 border-b-2 border-gray-200 focus:border-red-500 focus:outline-none focus:ring-0 bg-transparent text-gray-800 placeholder-gray-400 transition-colors duration-200"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
                 />
                 <MdLock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
                 <button
@@ -137,9 +168,10 @@ const SignUp = () => {
 
             <button
               type="submit"
-              className="w-full mt-6 py-3 rounded-full bg-red-500 hover:bg-red-600 text-white font-semibold text-base shadow-lg transition-all duration-300 transform hover:scale-105"
+              disabled={isSubmitting}
+              className={`w-full mt-6 py-3 rounded-full text-white font-semibold text-base shadow-lg transition-all duration-300 transform ${isSubmitting ? 'bg-red-400' : 'bg-red-500 hover:bg-red-600 hover:scale-105'}`}
             >
-              Register
+              {isSubmitting ? 'Creating...' : 'Register'}
             </button>
           </form>
         </div>
