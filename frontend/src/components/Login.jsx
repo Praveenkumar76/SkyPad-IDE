@@ -155,6 +155,31 @@ const Login = () => {
             >
               {isSubmitting ? 'Signing in...' : 'Login'}
             </button>
+
+            {/* Secondary normal Login button (consistent style) */}
+            <button
+              type="button"
+              onClick={() => document.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))}
+              className="w-full mt-3 py-3 rounded-full text-white font-semibold text-base shadow-lg transition-all duration-300 transform bg-red-500 hover:bg-red-600 hover:scale-105"
+            >
+              Login
+            </button>
+
+            {/* Google Sign-In */}
+            <div className="mt-3">
+              <a
+                href="http://localhost:5000/auth/google"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-full bg-white text-black border border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5">
+                  <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.884 31.91 29.322 35 24 35c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.152 7.961 3.039l5.657-5.657C34.676 5.053 29.627 3 24 3 12.955 3 4 11.955 4 23s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917z"/>
+                  <path fill="#FF3D00" d="M6.306 14.691l6.571 4.818C14.373 16.087 18.799 13 24 13c3.059 0 5.842 1.152 7.961 3.039l5.657-5.657C34.676 5.053 29.627 3 24 3 16.318 3 9.656 7.337 6.306 14.691z"/>
+                  <path fill="#4CAF50" d="M24 43c5.258 0 10.051-2.013 13.651-5.289l-6.291-5.316C29.322 35 24.884 37 20 37c-4.274 0-8.068-2.163-10.289-5.453l-6.5 5.006C6.438 40.556 14.59 43 24 43z"/>
+                  <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-1.344 3.91-5.906 7-11.303 7-4.884 0-9.322-2-12.289-5.453l-6.5 5.006C8.656 40.663 15.318 45 24 45c10.373 0 19-8.627 19-19 0-1.341-.138-2.651-.389-3.917z"/>
+                </svg>
+                <span className="text-sm font-medium">Sign in with Google</span>
+              </a>
+            </div>
           </form>
         </div>
       </div>
