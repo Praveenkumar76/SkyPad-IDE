@@ -1,4 +1,6 @@
-const API_BASE_URL = 'http://localhost:5000/api';
+// The backend URL is now loaded from an environment variable.
+// It will use your public Render URL in production and fall back to localhost for local development.
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000/api';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
