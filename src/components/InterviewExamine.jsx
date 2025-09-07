@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { io } from 'socket.io-client';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardNavbar from './DashboardNavbar';
 import BackButton from './BackButton';
@@ -28,6 +29,10 @@ const InterviewExamine = () => {
   const [isHost, setIsHost] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
+
+  // Configure socket URL (Render/production) with fallback to local
+  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5001';
 
   const languages = [
     { value: 'JavaScript', label: 'JavaScript' },
@@ -43,7 +48,44 @@ const InterviewExamine = () => {
     } else {
       createNewSession();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  // Socket connect/join room and listeners
+  useEffect(() => {
+    // Connect once
+    if (!socketRef.current) {
+      socketRef.current = io(SOCKET_URL, { transports: ['websocket'], withCredentials: true });
+    }
+
+    const socket = socketRef.current;
+
+    // Join room when we have an id
+    const roomToJoin = sessionId || session?.id;
+    if (roomToJoin) {
+      socket.emit('join-room', roomToJoin);
+    }
+
+    // Receive chat messages
+    const onChat = (payload) => {
+      if (!payload) return;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          sender: payload.id || 'Anonymous',
+          content: payload.message,
+          timestamp: new Date().toISOString()
+        }
+      ]);
+    };
+    socket.on('chat', onChat);
+
+    return () => {
+      socket.off('chat', onChat);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, session?.id]);
 
   useEffect(() => {
     scrollToBottom();
@@ -227,23 +269,29 @@ const InterviewExamine = () => {
   const sendMessage = () => {
     if (!newMessage.trim()) return;
     
-    const message = {
+    // Emit to room via socket for realtime delivery
+    const room = sessionId || session?.id;
+    if (socketRef.current && room) {
+      socketRef.current.emit('chat', { roomId: room, message: newMessage.trim() });
+    }
+
+    // Locally append for instant feedback
+    const localMessage = {
       id: Date.now(),
       sender: localStorage.getItem('userName') || 'Anonymous',
       content: newMessage,
       timestamp: new Date().toISOString()
     };
-    
-    const updatedMessages = [...messages, message];
+
+    const updatedMessages = [...messages, localMessage];
     setMessages(updatedMessages);
     setNewMessage('');
-    
-    const updatedSession = {
-      ...session,
-      messages: updatedMessages
-    };
+
+    const updatedSession = { ...session, messages: updatedMessages };
     setSession(updatedSession);
-    localStorage.setItem(`interviewSession_${sessionId}`, JSON.stringify(updatedSession));
+    if (sessionId) {
+      localStorage.setItem(`interviewSession_${sessionId}`, JSON.stringify(updatedSession));
+    }
   };
 
   const copyShareLink = () => {
