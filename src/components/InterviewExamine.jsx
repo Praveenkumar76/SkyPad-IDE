@@ -73,7 +73,7 @@ const InterviewExamine = () => {
         ...prev,
         {
           id: Date.now(),
-          sender: payload.id || 'Anonymous',
+          sender: payload.senderName || payload.id || 'Anonymous',
           content: payload.message,
           timestamp: new Date().toISOString()
         }
@@ -272,7 +272,7 @@ const InterviewExamine = () => {
     // Emit to room via socket for realtime delivery
     const room = sessionId || session?.id;
     if (socketRef.current && room) {
-      socketRef.current.emit('chat', { roomId: room, message: newMessage.trim() });
+      socketRef.current.emit('chat', { roomId: room, message: newMessage.trim(), senderName: localStorage.getItem('userName') || 'Anonymous' });
     }
 
     // Locally append for instant feedback
