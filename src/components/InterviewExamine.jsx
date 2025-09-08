@@ -406,6 +406,24 @@ const InterviewExamine = () => {
                 <textarea
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault();
+                      const target = e.target;
+                      const start = target.selectionStart;
+                      const end = target.selectionEnd;
+                      const updated = code.substring(0, start) + '  ' + code.substring(end);
+                      setCode(updated);
+                      requestAnimationFrame(() => {
+                        try {
+                          target.selectionStart = target.selectionEnd = start + 2;
+                        } catch (_) {}
+                      });
+                    }
+                  }}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="Write your code here..."
                   className="w-full h-64 bg-black/20 border border-white/20 rounded-lg p-4 text-white font-mono text-sm resize-none focus:outline-none focus:border-violet-400"
                 />

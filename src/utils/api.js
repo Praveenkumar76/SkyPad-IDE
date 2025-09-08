@@ -1,5 +1,5 @@
 // Resolve API base URL from environment with safe fallbacks
-const resolvedEnvBase = (
+const envBase = (
   import.meta?.env?.VITE_API_URL ||
   import.meta?.env?.VITE_BACKEND_URL ||
   import.meta?.env?.PUBLIC_API_URL ||
@@ -7,12 +7,22 @@ const resolvedEnvBase = (
 );
 
 const API_BASE_URL = (() => {
-  const trimmed = typeof resolvedEnvBase === 'string' ? resolvedEnvBase.trim() : '';
-  if (trimmed) {
-    return trimmed.replace(/\/$/, '');
+  const isBrowser = typeof window !== 'undefined';
+  const origin = isBrowser && window.location?.origin ? window.location.origin.replace(/\/$/, '') : '';
+  const trimmedEnv = typeof envBase === 'string' ? envBase.trim().replace(/\/$/, '') : '';
+
+  // If an env base is provided and it is not pointing to localhost in production, use it
+  if (trimmedEnv) {
+    const isEnvLocalhost = /^(http|https):\/\/localhost(?::\d+)?/i.test(trimmedEnv);
+    const isProdHost = isBrowser && window.location && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    if (!isEnvLocalhost || !isProdHost) {
+      return trimmedEnv;
+    }
+    // Ignore localhost env in production; fall through to origin
   }
-  if (typeof window !== 'undefined' && window.location?.origin) {
-    return `${window.location.origin.replace(/\/$/, '')}/api`;
+
+  if (origin) {
+    return `${origin}/api`;
   }
   return 'http://localhost:5000/api';
 })();
