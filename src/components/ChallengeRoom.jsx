@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -96,7 +97,7 @@ const ChallengeRoom = () => {
   const loadProblems = async () => {
     try {
       setLoadingProblems(true);
-      const response = await fetch('http://localhost:5000/api/problems', {
+      const response = await fetch(`${API_BASE_URL}/problems`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -193,7 +194,7 @@ const ChallengeRoom = () => {
     
     setIsRunning(true);
     try {
-      const response = await fetch('http://localhost:5000/api/problems/run', {
+      const response = await fetch(`${API_BASE_URL}/problems/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

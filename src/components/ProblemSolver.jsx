@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -95,7 +96,7 @@ char* solve(char* input) {
       }
 
       // Otherwise fetch from API
-      const response = await fetch(`http://localhost:5000/api/problems/${id}`);
+      const response = await fetch(`${API_BASE_URL}/problems/${id}`);
       if (!response.ok) {
         throw new Error('Problem not found');
       }
@@ -135,7 +136,7 @@ char* solve(char* input) {
     setTestResults(null);
 
     try {
-      const response = await fetch('http://localhost:5000/api/problems/run', {
+      const response = await fetch(`${API_BASE_URL}/problems/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,7 +174,7 @@ char* solve(char* input) {
 
     try {
       // First run the code to check if it passes all tests
-      const runResponse = await fetch('http://localhost:5000/api/problems/run', {
+      const runResponse = await fetch(`${API_BASE_URL}/problems/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

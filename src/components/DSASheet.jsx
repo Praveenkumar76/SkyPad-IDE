@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardNavbar from './DashboardNavbar';
@@ -52,7 +53,7 @@ const DSASheet = () => {
 
   const checkAndAddExistingProblems = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/problems', {
+      const response = await fetch(`${API_BASE_URL}/problems`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

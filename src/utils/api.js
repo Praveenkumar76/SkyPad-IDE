@@ -6,7 +6,7 @@ const envBase = (
   ''
 );
 
-const API_BASE_URL = (() => {
+export const API_BASE_URL = (() => {
   const isBrowser = typeof window !== 'undefined';
   const origin = isBrowser && window.location?.origin ? window.location.origin.replace(/\/$/, '') : '';
   const trimmedEnv = typeof envBase === 'string' ? envBase.trim().replace(/\/$/, '') : '';
@@ -28,7 +28,7 @@ const API_BASE_URL = (() => {
 })();
 
 // Helper function to get auth headers
-const getAuthHeaders = () => {
+export const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
   return {
     'Content-Type': 'application/json',

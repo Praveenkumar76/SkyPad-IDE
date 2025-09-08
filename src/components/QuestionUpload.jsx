@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../utils/api';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -218,7 +219,7 @@ const QuestionUpload = () => {
         throw new Error('Please log in to upload questions');
       }
 
-      const response = await fetch('http://localhost:5000/api/problems', {
+      const response = await fetch(`${API_BASE_URL}/problems`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
