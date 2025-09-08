@@ -146,9 +146,26 @@ const InterviewExamine = () => {
       setMessages((prev) => [...prev, msg]);
     });
 
+    s.on('participants', (list) => {
+      if (Array.isArray(list)) setParticipants(list);
+    });
+
     setSocket(s);
     return () => { s.close(); };
   }, [sessionId]);
+
+  // Emit code changes in real-time with a small debounce
+  useEffect(() => {
+    if (!socket || !connected || !sessionId) return;
+    const handle = setTimeout(() => {
+      socket.emit('code-change', {
+        sessionId,
+        code,
+        language: selectedLanguage
+      });
+    }, 150);
+    return () => clearTimeout(handle);
+  }, [code, selectedLanguage, socket, connected, sessionId]);
 
   const joinSession = () => {
     const newParticipant = {
