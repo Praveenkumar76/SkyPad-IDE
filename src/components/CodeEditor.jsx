@@ -71,8 +71,14 @@ const CodeEditor = () => {
 
   // WebSocket connection setup
   useEffect(() => {
-    const newSocket = io('http://localhost:3002');
+    const socketUrl = process.env.FRONTEND_API_URL || 'http://localhost:5000';
     
+    // 2. Establish the connection using the dynamic URL.
+    const newSocket = io(socketUrl, {
+      transports: ['websocket', 'polling'] // Good practice for robust connections
+    });
+
+    setSocket(newSocket);
     newSocket.on('connect', () => {
       setIsConnected(true);
       setOutput('Connected to code execution server!');
