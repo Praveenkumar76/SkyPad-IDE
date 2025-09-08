@@ -146,6 +146,12 @@ const InterviewExamine = () => {
       setMessages((prev) => [...prev, msg]);
     });
 
+    s.on('chat-history', (history) => {
+      if (Array.isArray(history)) {
+        setMessages(history);
+      }
+    });
+
     s.on('participants', (list) => {
       if (Array.isArray(list)) setParticipants(list);
     });
@@ -305,20 +311,11 @@ const InterviewExamine = () => {
       content: newMessage,
       timestamp: new Date().toISOString()
     };
-    
-    const updatedMessages = [...messages, message];
-    setMessages(updatedMessages);
+    // Do not locally append to avoid duplicates; rely on server echo
     setNewMessage('');
     if (socket && connected && sessionId) {
       socket.emit('chat-message', { sessionId, message });
     }
-    
-    const updatedSession = {
-      ...session,
-      messages: updatedMessages
-    };
-    setSession(updatedSession);
-    localStorage.setItem(`interviewSession_${sessionId}`, JSON.stringify(updatedSession));
   };
 
   const copyShareLink = () => {
