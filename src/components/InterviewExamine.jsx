@@ -414,11 +414,11 @@ const InterviewExamine = () => {
                       const end = target.selectionEnd;
                       const updated = code.substring(0, start) + '  ' + code.substring(end);
                       setCode(updated);
-                      requestAnimationFrame(() => {
-                        try {
-                          target.selectionStart = target.selectionEnd = start + 2;
-                        } catch (_) {}
-                      });
+                      // requestAnimationFrame(() => {
+                      //   try {
+                      //     target.selectionStart = target.selectionEnd = start + 2;
+                      //   } catch (_) {}
+                      // });
                     }
                   }}
                   autoComplete="off"
