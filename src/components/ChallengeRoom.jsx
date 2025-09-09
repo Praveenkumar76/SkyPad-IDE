@@ -21,7 +21,7 @@ const ChallengeRoom = () => {
   const [loadingProblems, setLoadingProblems] = useState(true);
   const [selectedProblem, setSelectedProblem] = useState(null);
   const [waitingTime, setWaitingTime] = useState(120);
-  const [challengeTime, setChallengeTime] = useState(1800); // 30 minutes
+  const [challengeTime, setChallengeTime] = useState(0);
   const [isWaiting, setIsWaiting] = useState(true);
   const [isChallengeActive, setIsChallengeActive] = useState(false);
   const [isChallengeEnded, setIsChallengeEnded] = useState(false);
@@ -59,11 +59,24 @@ const ChallengeRoom = () => {
       setPlayers(roomData.players || []);
       setScores(roomData.scores || {});
       
+      // Restore waiting countdown without restarting
+      if (!roomData.selectedProblem && roomData.waitingEndsAt) {
+        const remaining = Math.max(0, Math.floor((new Date(roomData.waitingEndsAt).getTime() - Date.now()) / 1000));
+        setWaitingTime(remaining);
+        setIsWaiting(true);
+        if (remaining > 0) startWaitingTimer(roomData.waitingEndsAt);
+      }
+
       if (roomData.selectedProblem) {
         setSelectedProblem(roomData.selectedProblem);
         setIsWaiting(false);
         setIsChallengeActive(true);
-        startChallengeTimer();
+        // Restore challenge timer from persisted end time
+        if (roomData.challengeEndsAt) {
+          const remaining = Math.max(0, Math.floor((new Date(roomData.challengeEndsAt).getTime() - Date.now()) / 1000));
+          setChallengeTime(remaining);
+          if (remaining > 0) startChallengeTimer(roomData.challengeEndsAt);
+        }
       }
     } else {
       // Create new room
@@ -80,7 +93,8 @@ const ChallengeRoom = () => {
         status: 'waiting', // waiting, active, ended
         createdAt: new Date().toISOString(),
         selectedProblem: null,
-        scores: {}
+        scores: {},
+        waitingEndsAt: new Date(Date.now() + 120000).toISOString()
       };
       
       setRoom(newRoom);
@@ -90,7 +104,7 @@ const ChallengeRoom = () => {
       localStorage.setItem(`challengeRoom_${roomId}`, JSON.stringify(newRoom));
       
       // Start waiting timer
-      startWaitingTimer();
+      startWaitingTimer(newRoom.waitingEndsAt);
     }
   };
 
@@ -118,32 +132,28 @@ const ChallengeRoom = () => {
     }
   };
 
-  const startWaitingTimer = () => {
+  const startWaitingTimer = (endsAtIso) => {
     intervalRef.current = setInterval(() => {
-      setWaitingTime(prev => {
-        if (prev <= 1) {
+      const remaining = Math.max(0, Math.floor((new Date(endsAtIso).getTime() - Date.now()) / 1000));
+      setWaitingTime(remaining);
+      if (remaining <= 0) {
           clearInterval(intervalRef.current);
           if (players.length < 2) {
             alert('No one joined the challenge. Room will be closed.');
             navigate('/challenges');
           }
-          return 0;
-        }
-        return prev - 1;
-      });
+      }
     }, 1000);
   };
 
-  const startChallengeTimer = () => {
+  const startChallengeTimer = (endsAtIso) => {
     challengeIntervalRef.current = setInterval(() => {
-      setChallengeTime(prev => {
-        if (prev <= 1) {
+      const remaining = Math.max(0, Math.floor((new Date(endsAtIso).getTime() - Date.now()) / 1000));
+      setChallengeTime(remaining);
+      if (remaining <= 0) {
           clearInterval(challengeIntervalRef.current);
           endChallenge();
-          return 0;
-        }
-        return prev - 1;
-      });
+      }
     }, 1000);
   };
 
@@ -152,10 +162,17 @@ const ChallengeRoom = () => {
     
     console.log('Selecting problem:', problem);
     setSelectedProblem(problem);
+    // Set challenge time based on difficulty
+    const difficulty = problem.difficulty || 'Medium';
+    const durationMap = { Easy: 15 * 60, Medium: 30 * 60, Hard: 50 * 60 };
+    const durationSec = durationMap[difficulty] || 30 * 60;
+    const challengeEndsAt = new Date(Date.now() + durationSec * 1000).toISOString();
+    setChallengeTime(durationSec);
     const updatedRoom = {
       ...room,
       selectedProblem: problem,
-      status: 'active'
+      status: 'active',
+      challengeEndsAt
     };
     
     setRoom(updatedRoom);
@@ -166,7 +183,7 @@ const ChallengeRoom = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
-    startChallengeTimer();
+    startChallengeTimer(challengeEndsAt);
   };
 
   const joinRoom = () => {
@@ -237,6 +254,12 @@ const ChallengeRoom = () => {
       
       // Check for winner
       checkWinner(newScores);
+
+      // If player solved all tests, end immediately and declare winner
+      if (passedTests > 0 && passedTests === totalTests) {
+        setWinner(playerId);
+        endChallenge();
+      }
       
     } catch (error) {
       console.error('Error running code:', error);
@@ -284,6 +307,32 @@ const ChallengeRoom = () => {
     setIsChallengeEnded(true);
     clearInterval(challengeIntervalRef.current);
     
+    // Determine winner if not already decided (time ran out)
+    if (!winner) {
+      const playerScores = Object.values(scores);
+      if (playerScores.length >= 2) {
+        const entries = Object.entries(scores);
+        const [aId, a] = entries[0];
+        const [bId, b] = entries[1];
+        const aScore = (a?.passed || 0);
+        const bScore = (b?.passed || 0);
+        const aPct = (a?.percentage || 0);
+        const bPct = (b?.percentage || 0);
+        if (aScore > bScore || (aScore === bScore && aPct > bPct)) setWinner(aId);
+        else if (bScore > aScore || (aScore === bScore && bPct > aPct)) setWinner(bId);
+        else setWinner('tie');
+      }
+    }
+
+    // Reward coins for winner based on difficulty
+    const difficulty = selectedProblem?.difficulty || 'Medium';
+    const rewardMap = { Easy: 10, Medium: 20, Hard: 30 };
+    const reward = rewardMap[difficulty] || 20;
+    if (winner && winner !== 'tie') {
+      const currentCoins = parseInt(localStorage.getItem('coins') || '0', 10);
+      localStorage.setItem('coins', String(currentCoins + reward));
+    }
+
     const updatedRoom = {
       ...room,
       status: 'ended',
