@@ -531,8 +531,30 @@ const CodeEditor = () => {
                   <textarea
 
                     value={code}
-
+                    ref={textAreaRef}
                     onChange={(e) => setCode(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab') {
+                        e.preventDefault(); // Prevent default tab behavior (focus change)
+
+                        const start = e.target.selectionStart;
+                        const end = e.target.selectionEnd;
+
+                        // Create the new value with the tab spaces
+                        const updated = code.substring(0, start) + '  ' + code.substring(end);
+                        setCode(updated);
+
+                        // Schedule the cursor position update
+                        // This ensures it runs AFTER React has updated the DOM
+                        setTimeout(() => {
+                          if (textAreaRef.current) {
+                            const newCursorPosition = start + 2;
+                            textAreaRef.current.selectionStart = newCursorPosition;
+                            textAreaRef.current.selectionEnd = newCursorPosition;
+                          }
+                        }, 0);
+                      }
+                    }}
 
                     className="w-full h-full bg-transparent text-gray-300 font-mono text-sm resize-none border-none outline-none"
 

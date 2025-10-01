@@ -28,8 +28,13 @@ const InterviewExamine = () => {
   const [isHost, setIsHost] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const messagesEndRef = useRef(null);
+  const textAreaRef = useRef(null);
   const [socket, setSocket] = useState(null);
   const [connected, setConnected] = useState(false);
+  // Prevent echo loop when applying remote updates
+  const suppressNextEmitRef = useRef(false);
+  // Debounce timer for code-change emits
+  const debounceTimerRef = useRef(null);
 
   const SOCKET_URL = (
     import.meta?.env?.VITE_SOCKET_URL ||
@@ -126,12 +131,24 @@ const InterviewExamine = () => {
           name: localStorage.getItem('userName') || 'User'
         }
       });
+
+      // Share current code to newly joined peers to bootstrap their editor
+      // Emit only if we have something meaningful
+      if (code && code.length > 0) {
+        s.emit('code-change', {
+          sessionId,
+          code,
+          language: selectedLanguage
+        });
+      }
     });
 
     s.on('disconnect', () => setConnected(false));
 
     s.on('code-update', (payload) => {
       if (typeof payload?.code === 'string') {
+        // Mark that the next local change originates from remote to avoid re-emitting
+        suppressNextEmitRef.current = true;
         setCode(payload.code);
         if (payload.language) setSelectedLanguage(payload.language);
       }
@@ -163,14 +180,32 @@ const InterviewExamine = () => {
   // Emit code changes in real-time with a small debounce
   useEffect(() => {
     if (!socket || !connected || !sessionId) return;
-    const handle = setTimeout(() => {
+
+    // Clear any pending debounce
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      // If this update came from a remote 'code-update', do not echo back
+      if (suppressNextEmitRef.current) {
+        suppressNextEmitRef.current = false;
+        return;
+      }
       socket.emit('code-change', {
         sessionId,
         code,
         language: selectedLanguage
       });
     }, 150);
-    return () => clearTimeout(handle);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
   }, [code, selectedLanguage, socket, connected, sessionId]);
 
   const joinSession = () => {
@@ -404,21 +439,29 @@ const InterviewExamine = () => {
               {/* Code Textarea */}
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 flex-1">
                 <textarea
+                  ref={textAreaRef}
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Tab') {
-                      e.preventDefault();
-                      const target = e.target;
-                      const start = target.selectionStart;
-                      const end = target.selectionEnd;
+                      e.preventDefault(); // Prevent default tab behavior (focus change)
+
+                      const start = e.target.selectionStart;
+                      const end = e.target.selectionEnd;
+
+                      // Create the new value with the tab spaces
                       const updated = code.substring(0, start) + '  ' + code.substring(end);
                       setCode(updated);
-                      // requestAnimationFrame(() => {
-                      //   try {
-                      //     target.selectionStart = target.selectionEnd = start + 2;
-                      //   } catch (_) {}
-                      // });
+
+                      // Schedule the cursor position update
+                      // This ensures it runs AFTER React has updated the DOM
+                      setTimeout(() => {
+                        if (textAreaRef.current) {
+                          const newCursorPosition = start + 2;
+                          textAreaRef.current.selectionStart = newCursorPosition;
+                          textAreaRef.current.selectionEnd = newCursorPosition;
+                        }
+                      }, 0);
                     }
                   }}
                   autoComplete="off"
