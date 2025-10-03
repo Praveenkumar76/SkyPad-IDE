@@ -393,6 +393,27 @@ const QuestionUpload = () => {
                 </button>
               </div>
 
+              {/* Input Format Guide */}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+                <h4 className="text-blue-300 font-semibold mb-2">📘 Input Format Guide (IMPORTANT!)</h4>
+                <div className="text-sm text-blue-200 space-y-2">
+                  <p><strong>✅ Use simple formats that are easy to parse:</strong></p>
+                  <div className="bg-black/30 p-3 rounded space-y-1 font-mono text-xs">
+                    <p className="text-green-300">• Single number: <code>5</code></p>
+                    <p className="text-green-300">• Space-separated: <code>1 2 3 4</code></p>
+                    <p className="text-green-300">• Two lines: <code>4\n1 2 3 4</code> (size then values)</p>
+                    <p className="text-green-300">• Multiple lines: <code>3\nhello\nworld\ntest</code></p>
+                  </div>
+                  <p className="text-red-300 mt-2"><strong>❌ Avoid these formats:</strong></p>
+                  <div className="bg-black/30 p-3 rounded space-y-1 font-mono text-xs">
+                    <p className="text-red-300">• Arrays with brackets: <code>[1, 2, 3]</code> ❌</p>
+                    <p className="text-red-300">• Variable assignments: <code>arr = [1, 2]</code> ❌</p>
+                    <p className="text-red-300">• Python/JS syntax: <code>{"n = 5"}</code> ❌</p>
+                  </div>
+                  <p className="text-yellow-300 mt-2">💡 <strong>Why?</strong> Simple formats work in ALL languages without complex parsing!</p>
+                </div>
+              </div>
+
               {formData.sampleTestCases.map((testCase, index) => (
                 <div key={index} className="border border-white/20 rounded-lg p-4 mb-4">
                   <div className="flex items-center justify-between mb-4">
@@ -411,17 +432,20 @@ const QuestionUpload = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-medium-contrast text-sm font-medium mb-2">
-                        Input *
+                        Input (stdin) *
                       </label>
                       <textarea
                         value={testCase.input}
                         onChange={(e) => updateSampleTestCase(index, 'input', e.target.value)}
                         rows={3}
-                        className={`w-full px-3 py-2 bg-white/10 backdrop-blur-md border rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-violet-400 transition-colors resize-none ${
+                        className={`w-full px-3 py-2 bg-white/10 backdrop-blur-md border rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-violet-400 transition-colors resize-none font-mono ${
                           errors[`sampleInput${index}`] ? 'border-red-500' : 'border-white/20'
                         }`}
-                        placeholder="Enter input"
+                        placeholder="Example: 5  or  1 2 3 4  or  3&#10;hello&#10;world"
                       />
+                      {testCase.input && (testCase.input.includes('[') || testCase.input.includes('=')) && (
+                        <p className="text-yellow-400 text-xs mt-1">⚠️ Warning: Avoid brackets or = signs. Use simple space-separated values.</p>
+                      )}
                       {errors[`sampleInput${index}`] && <p className="text-red-400 text-sm mt-1">{errors[`sampleInput${index}`]}</p>}
                     </div>
 
@@ -492,17 +516,20 @@ const QuestionUpload = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-medium-contrast text-sm font-medium mb-2">
-                        Input *
+                        Input (stdin) *
                       </label>
                       <textarea
                         value={testCase.input}
                         onChange={(e) => updateHiddenTestCase(index, 'input', e.target.value)}
                         rows={3}
-                        className={`w-full px-3 py-2 bg-white/10 backdrop-blur-md border rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-violet-400 transition-colors resize-none ${
+                        className={`w-full px-3 py-2 bg-white/10 backdrop-blur-md border rounded-lg text-white placeholder-gray-300 focus:outline-none focus:border-violet-400 transition-colors resize-none font-mono ${
                           errors[`hiddenInput${index}`] ? 'border-red-500' : 'border-white/20'
                         }`}
-                        placeholder="Enter input"
+                        placeholder="Example: 10  or  5 10 15  or  2&#10;hello&#10;world"
                       />
+                      {testCase.input && (testCase.input.includes('[') || testCase.input.includes('=')) && (
+                        <p className="text-yellow-400 text-xs mt-1">⚠️ Warning: Avoid brackets or = signs. Use simple space-separated values.</p>
+                      )}
                       {errors[`hiddenInput${index}`] && <p className="text-red-400 text-sm mt-1">{errors[`hiddenInput${index}`]}</p>}
                     </div>
 

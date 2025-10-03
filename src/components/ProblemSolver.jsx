@@ -519,12 +519,17 @@ console.log(arr.reduce((a,b) => a+b, 0));`}</pre>
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={handleEditorKeyDown}
               className="flex-1 w-full bg-black/30 text-white font-mono text-sm p-4 rounded-lg border border-white/20 focus:outline-none focus:border-violet-400 resize-none"
-              placeholder={`Write your ${selectedLanguage} solution here...\n\nExample for ${selectedLanguage}:\n${
-                selectedLanguage === 'JavaScript' ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf8").trim();\nconsole.log(input);' :
-                selectedLanguage === 'Python' ? 'import sys\ndata = sys.stdin.read().strip()\nprint(data)' :
-                selectedLanguage === 'Java' ? 'import java.util.Scanner;\npublic class Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    String line = sc.nextLine();\n    System.out.println(line);\n  }\n}' :
-                selectedLanguage === 'C++' ? '#include <iostream>\nusing namespace std;\nint main() {\n  string line;\n  getline(cin, line);\n  cout << line;\n  return 0;\n}' :
-                selectedLanguage === 'C' ? '#include <stdio.h>\nint main() {\n  char line[1000];\n  fgets(line, sizeof(line), stdin);\n  printf("%s", line);\n  return 0;\n}' :
+              placeholder={`Write your ${selectedLanguage} solution here...
+
+📖 Tip: Check the yellow hint box above for a working example!
+
+Basic template for ${selectedLanguage}:
+${
+                selectedLanguage === 'JavaScript' ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf8").trim();\n// Parse input here\nconsole.log(result);' :
+                selectedLanguage === 'Python' ? 'import sys\ndata = sys.stdin.read().strip()\n# Parse data here\nprint(result)' :
+                selectedLanguage === 'Java' ? 'import java.util.Scanner;\npublic class Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    // Read and parse input\n    System.out.println(result);\n  }\n}' :
+                selectedLanguage === 'C++' ? '#include <iostream>\nusing namespace std;\nint main() {\n  // Read and parse input\n  cout << result;\n  return 0;\n}' :
+                selectedLanguage === 'C' ? '#include <stdio.h>\nint main() {\n  // Read and parse input\n  printf("%d", result);\n  return 0;\n}' :
                 'Read from stdin, process, write to stdout'
               }`}
               spellCheck={false}
