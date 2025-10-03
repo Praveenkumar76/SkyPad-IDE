@@ -10,7 +10,8 @@ import {
   MdTimer,
   MdMemory,
   MdTag,
-  MdPerson
+  MdPerson,
+  MdRefresh
 } from 'react-icons/md';
 import { dsaSheetData } from '../data/dsaSheetData';
 
@@ -342,6 +343,14 @@ const ProblemSolver = () => {
               ))}
             </select>
             <button
+              onClick={() => setCode('')}
+              className="px-4 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all duration-300 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white hover:scale-105"
+              title="Reset code editor"
+            >
+              <MdRefresh className="w-5 h-5" />
+              <span>Reset</span>
+            </button>
+            <button
               onClick={runCode}
               disabled={isRunning || !code.trim()}
               className={`px-6 py-2 rounded-lg font-medium flex items-center space-x-2 transition-all duration-300 ${
@@ -382,6 +391,20 @@ const ProblemSolver = () => {
         {/* Problem Description */}
         <div className="w-1/2 p-6 overflow-y-auto">
           <div className="space-y-6">
+            {/* Input/Output Guide */}
+            <div className="bg-gradient-to-r from-violet-500/10 to-purple-500/10 border border-violet-500/30 rounded-xl p-4 mb-4">
+              <h3 className="text-violet-300 font-semibold mb-2 flex items-center space-x-2">
+                <MdCode className="w-4 h-4" />
+                <span>How to Read Input & Print Output</span>
+              </h3>
+              <div className="text-sm text-gray-300 space-y-1">
+                <p>• Your program receives input via <strong className="text-white">standard input (stdin)</strong></p>
+                <p>• You must print output to <strong className="text-white">standard output (stdout)</strong></p>
+                <p>• Test inputs are passed exactly as shown (e.g., <code className="bg-black/40 px-1 rounded">1</code> or <code className="bg-black/40 px-1 rounded">1, 2, 3, 4</code>)</p>
+                <p>• Parse the input as needed for your solution</p>
+              </div>
+            </div>
+
             {/* Problem Info */}
             <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
               <div className="flex items-center justify-between mb-4">
@@ -410,18 +433,24 @@ const ProblemSolver = () => {
             {/* Sample Test Cases */}
             <div className="bg-white/5 backdrop-blur-md rounded-xl p-6 border border-white/10">
               <h3 className="text-lg font-semibold text-white mb-4">Sample Test Cases</h3>
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                <p className="text-blue-300 text-sm">
+                  💡 <strong>Important:</strong> Your program should read from <code className="bg-black/30 px-2 py-1 rounded">stdin</code> and write to <code className="bg-black/30 px-2 py-1 rounded">stdout</code>. 
+                  The test input shown below will be passed as stdin to your program.
+                </p>
+              </div>
               <div className="space-y-4">
                 {problem.sampleTestCases.map((testCase, index) => (
                   <div key={index} className="bg-black/20 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-400 mb-2">Input:</h4>
+                        <h4 className="text-sm font-medium text-gray-400 mb-2">Input (stdin):</h4>
                         <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border">
                           {testCase.input}
                         </pre>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-400 mb-2">Expected Output:</h4>
+                        <h4 className="text-sm font-medium text-gray-400 mb-2">Expected Output (stdout):</h4>
                         <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border">
                           {testCase.output}
                         </pre>
@@ -472,13 +501,30 @@ const ProblemSolver = () => {
             </div>
           </div>
 
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 flex flex-col">
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 mb-2 text-xs text-yellow-300">
+              <strong>📝 Hint:</strong> {
+                selectedLanguage === 'JavaScript' ? 'Use fs.readFileSync(0, "utf8") to read stdin' :
+                selectedLanguage === 'Python' ? 'Use sys.stdin.read() or input() to read stdin' :
+                selectedLanguage === 'Java' ? 'Use Scanner or BufferedReader to read stdin' :
+                selectedLanguage === 'C++' ? 'Use cin or getline() to read stdin' :
+                selectedLanguage === 'C' ? 'Use scanf() or fgets() to read stdin' :
+                'Read from stdin and write to stdout'
+              }
+            </div>
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={handleEditorKeyDown}
-              className="w-full h-full bg-black/30 text-white font-mono text-sm p-4 rounded-lg border border-white/20 focus:outline-none focus:border-violet-400 resize-none"
-              placeholder={`Write your ${selectedLanguage} solution here...`}
+              className="flex-1 w-full bg-black/30 text-white font-mono text-sm p-4 rounded-lg border border-white/20 focus:outline-none focus:border-violet-400 resize-none"
+              placeholder={`Write your ${selectedLanguage} solution here...\n\nExample for ${selectedLanguage}:\n${
+                selectedLanguage === 'JavaScript' ? 'const fs = require("fs");\nconst input = fs.readFileSync(0, "utf8").trim();\nconsole.log(input);' :
+                selectedLanguage === 'Python' ? 'import sys\ndata = sys.stdin.read().strip()\nprint(data)' :
+                selectedLanguage === 'Java' ? 'import java.util.Scanner;\npublic class Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    String line = sc.nextLine();\n    System.out.println(line);\n  }\n}' :
+                selectedLanguage === 'C++' ? '#include <iostream>\nusing namespace std;\nint main() {\n  string line;\n  getline(cin, line);\n  cout << line;\n  return 0;\n}' :
+                selectedLanguage === 'C' ? '#include <stdio.h>\nint main() {\n  char line[1000];\n  fgets(line, sizeof(line), stdin);\n  printf("%s", line);\n  return 0;\n}' :
+                'Read from stdin, process, write to stdout'
+              }`}
               spellCheck={false}
             />
           </div>
