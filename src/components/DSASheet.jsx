@@ -20,38 +20,22 @@ const DSASheet = () => {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [progress, setProgress] = useState({});
+  const [topicProblems, setTopicProblems] = useState({});  // Store problems from DB
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch solved problems from backend
+    // Fetch everything from database
     fetchSolvedProblems();
+    fetchAllProblems();
     
-    // Check for existing problems and add them to DSA sheet
-    checkAndAddExistingProblems();
-    
-    // Listen for storage changes to refresh when new problems are added
-    const handleStorageChange = (e) => {
-      if (e.key === 'dsaProblems' || e.key === 'solvedProblems') {
-        // Force re-render when DSA problems or solved status are updated
-        if (e.key === 'solvedProblems') {
-          const saved = e.newValue;
-          if (saved) {
-            setSolvedProblems(new Set(JSON.parse(saved)));
-          }
-        }
-        setProgress(prev => ({ ...prev }));
-      }
-    };
-    
-    // Listen for custom DSA problems update event
+    // Listen for custom DSA problems update event (when new problem is uploaded)
     const handleDSAUpdate = () => {
-      refreshDSASheet();
+      fetchAllProblems();
       fetchSolvedProblems();
     };
     
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('dsaProblemsUpdated', handleDSAUpdate);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('dsaProblemsUpdated', handleDSAUpdate);
     };
   }, []);
@@ -81,16 +65,17 @@ const DSASheet = () => {
     }
   };
 
-  const checkAndAddExistingProblems = async () => {
+  const fetchAllProblems = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/problems`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      setLoading(true);
+      // Fetch ALL problems from database (public endpoint, no auth needed)
+      const response = await fetch(`${API_BASE_URL}/problems?limit=1000`);
       
       if (response.ok) {
-        const problems = await response.json();
+        const data = await response.json();
+        const problems = data.problems || [];
+        console.log(`DSA Sheet: Loaded ${problems.length} problems from database (all users' uploads)`);
+        
         const tagToTopic = {
           'recursion': 'recursion',
           'linkedlist': 'linkedlist',
@@ -105,9 +90,9 @@ const DSASheet = () => {
           'greedy': 'greedy'
         };
 
-        const dsaProblems = JSON.parse(localStorage.getItem('dsaProblems') || '{}');
-        let updated = false;
-
+        // Organize problems by topic based on tags (from DATABASE, not localStorage)
+        const dsaProblems = {};
+        
         problems.forEach(problem => {
           const tags = problem.tags || [];
           for (const tag of tags) {
@@ -118,90 +103,56 @@ const DSASheet = () => {
                 dsaProblems[matchedTopic] = [];
               }
               
-              // Check if problem already exists
+              // Check if problem already exists in this topic
               const exists = dsaProblems[matchedTopic].some(p => p.id === problem._id);
               if (!exists) {
-                const dsaProblem = {
+                dsaProblems[matchedTopic].push({
                   id: problem._id,
                   title: problem.title,
                   difficulty: problem.difficulty,
                   description: problem.description,
-                  link: `/solve/${problem._id}`,
-                  isSolved: false,
-                  problem: {
-                    title: problem.title,
-                    description: problem.description,
-                    sampleTestCases: problem.sampleTestCases || [],
-                    hiddenTestCases: problem.hiddenTestCases || [],
-                    constraints: problem.constraints || '',
-                    allowedLanguages: problem.allowedLanguages || ['JavaScript']
-                  }
-                };
-                
-                dsaProblems[matchedTopic].push(dsaProblem);
-                updated = true;
+                  constraints: problem.constraints,
+                  sampleTestCases: problem.sampleTestCases || [],
+                  hiddenTestCases: problem.hiddenTestCases || [],
+                  allowedLanguages: problem.allowedLanguages || ['JavaScript'],
+                  timeLimit: problem.timeLimit,
+                  memoryLimit: problem.memoryLimit,
+                  createdBy: problem.createdBy
+                });
               }
-              break;
+              break; // Only add to first matching topic
             }
           }
         });
 
-        if (updated) {
-          localStorage.setItem('dsaProblems', JSON.stringify(dsaProblems));
-        }
+        setTopicProblems(dsaProblems);
       }
     } catch (error) {
-      console.error('Error checking existing problems:', error);
+      console.error('Error fetching problems:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Update solved problems when localStorage changes
   useEffect(() => {
-    const handleStorageChange = () => {
-      const saved = localStorage.getItem('solvedProblems');
-      if (saved) {
-        setSolvedProblems(new Set(JSON.parse(saved)));
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  useEffect(() => {
-    // Calculate progress for each topic - only use uploaded problems with tags
+    // Calculate progress for each topic based on problems from DATABASE
     const newProgress = {};
     dsaSheetData.topics.forEach(topic => {
-      // Only get uploaded problems from localStorage (no static problems)
-      const uploadedProblems = JSON.parse(localStorage.getItem('dsaProblems') || '{}')[topic.id] || [];
-      
-      const solved = uploadedProblems.filter(p => solvedProblems.has(p.id)).length;
+      const topicProbs = topicProblems[topic.id] || [];
+      const solved = topicProbs.filter(p => solvedProblems.has(p.id)).length;
       newProgress[topic.id] = {
         solved,
-        total: uploadedProblems.length,
-        percentage: uploadedProblems.length > 0 ? Math.round((solved / uploadedProblems.length) * 100) : 0
+        total: topicProbs.length,
+        percentage: topicProbs.length > 0 ? Math.round((solved / topicProbs.length) * 100) : 0
       };
     });
     setProgress(newProgress);
-  }, [solvedProblems]);
+  }, [solvedProblems, topicProblems]);
 
   // Add a refresh function that can be called manually
   const refreshDSASheet = async () => {
-    await checkAndAddExistingProblems();
+    await fetchAllProblems();
     await fetchSolvedProblems();
-    
-    // Force progress recalculation
-    const newProgress = {};
-    dsaSheetData.topics.forEach(topic => {
-      const uploadedProblems = JSON.parse(localStorage.getItem('dsaProblems') || '{}')[topic.id] || [];
-      const solved = uploadedProblems.filter(p => solvedProblems.has(p.id)).length;
-      newProgress[topic.id] = {
-        solved,
-        total: uploadedProblems.length,
-        percentage: uploadedProblems.length > 0 ? Math.round((solved / uploadedProblems.length) * 100) : 0
-      };
-    });
-    setProgress(newProgress);
   };
 
   const handleProblemClick = (problemId) => {
@@ -253,6 +204,23 @@ const DSASheet = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Clear Cache Button */}
+              <button
+                onClick={() => {
+                  if (confirm('Clear old cache and reload from database?')) {
+                    localStorage.removeItem('dsaProblems');
+                    console.log('✅ Cleared cache, reloading from MongoDB...');
+                    refreshDSASheet();
+                    alert('Cache cleared! Loading fresh data from database.');
+                  }
+                }}
+                className="bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                title="Clear old cache"
+              >
+                <MdRefresh className="w-4 h-4" />
+                <span>Clear Cache</span>
+              </button>
+              
               <button
                 onClick={refreshDSASheet}
                 className="bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
@@ -377,15 +345,26 @@ const DSASheet = () => {
               {/* Problems List */}
               <div className="space-y-3">
                 {(() => {
-                  // Only show uploaded problems with tags
-                  const uploadedProblems = JSON.parse(localStorage.getItem('dsaProblems') || '{}')[selectedTopic] || [];
+                  // Get problems from DATABASE based on selected topic
+                  const topicProbs = topicProblems[selectedTopic] || [];
                   
-                  return uploadedProblems.map((problem, index) => {
+                  if (topicProbs.length === 0) {
+                    return (
+                      <div className="bg-white/5 backdrop-blur-md rounded-xl p-8 border border-white/10 text-center">
+                        <p className="text-gray-400 mb-2">No problems found for this topic yet.</p>
+                        <p className="text-gray-500 text-sm">Upload a problem with the "{selectedTopic}" tag to see it here!</p>
+                      </div>
+                    );
+                  }
+                  
+                  return topicProbs.map((problem, index) => {
                   const isSolved = solvedProblems.has(problem.id);
                   return (
                     <div
                       key={problem.id}
-                      className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:border-violet-400/50 transition-all duration-300 group"
+                      className={`bg-white/10 backdrop-blur-md rounded-xl p-6 border transition-all duration-300 group ${
+                        isSolved ? 'border-green-400/50 hover:border-green-400' : 'border-white/20 hover:border-violet-400/50'
+                      }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">

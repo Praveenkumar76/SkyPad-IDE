@@ -142,67 +142,7 @@ const QuestionUpload = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const addToDSASheet = (problem) => {
-    // Map tags to DSA sheet topics
-    const tagToTopic = {
-      'recursion': 'recursion',
-      'linkedlist': 'linkedlist',
-      'array': 'array',
-      'string': 'string',
-      'stack': 'stack',
-      'queue': 'queue',
-      'tree': 'tree',
-      'graph': 'graph',
-      'dynamic-programming': 'dynamic-programming',
-      'dp': 'dynamic-programming',
-      'greedy': 'greedy'
-    };
-
-    // Find matching topic
-    const tags = problem.tags || [];
-    let matchedTopic = null;
-    
-    for (const tag of tags) {
-      const lowerTag = tag.toLowerCase().trim();
-      if (tagToTopic[lowerTag]) {
-        matchedTopic = tagToTopic[lowerTag];
-        break;
-      }
-    }
-
-    if (matchedTopic) {
-      // Add to localStorage for DSA sheet integration
-      const dsaProblems = JSON.parse(localStorage.getItem('dsaProblems') || '{}');
-      if (!dsaProblems[matchedTopic]) {
-        dsaProblems[matchedTopic] = [];
-      }
-      
-      const dsaProblem = {
-        id: problem._id,
-        title: problem.title,
-        difficulty: problem.difficulty,
-        description: problem.description,
-        link: `/solve/${problem._id}`,
-        isSolved: false,
-        problem: {
-          title: problem.title,
-          description: problem.description,
-          sampleTestCases: problem.sampleTestCases || [],
-          hiddenTestCases: problem.hiddenTestCases || [],
-          constraints: problem.constraints || '',
-          allowedLanguages: problem.allowedLanguages || ['JavaScript']
-        }
-      };
-      
-      dsaProblems[matchedTopic].push(dsaProblem);
-      localStorage.setItem('dsaProblems', JSON.stringify(dsaProblems));
-      console.log(`Question added to DSA sheet under topic: ${matchedTopic}`);
-      console.log('Updated DSA problems:', dsaProblems);
-    } else {
-      console.log('Question has no matching tags for DSA sheet - will only appear in Problems section');
-      console.log('Available tags:', tags);
-    }
-  };
+  // No need for localStorage anymore - problems are stored in DB and fetched by DSASheet
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -239,14 +179,23 @@ const QuestionUpload = () => {
       const result = await response.json();
       
       console.log('Problem created successfully:', result);
+      console.log('Problem ID:', result._id);
+      console.log('Problem tags:', result.tags);
       
-      // Add to DSA sheet based on tags
-      addToDSASheet(result);
-      
-      // Trigger a custom event to refresh DSA sheet
+      // Trigger event to refresh DSA sheet and Problems (they will fetch from DB)
       window.dispatchEvent(new CustomEvent('dsaProblemsUpdated'));
       
-      alert('Question uploaded successfully and added to DSA sheet!');
+      const hasDSATags = result.tags?.some(tag => {
+        const lowerTag = tag.toLowerCase().trim();
+        return ['recursion', 'linkedlist', 'array', 'string', 'stack', 'queue', 'tree', 'graph', 'dynamic-programming', 'dp', 'greedy'].includes(lowerTag);
+      });
+      
+      if (hasDSATags) {
+        alert('✅ Question uploaded successfully!\n\n📊 This problem will appear in:\n• Problems section\n• DSA Sheet (based on tags)');
+      } else {
+        alert('✅ Question uploaded successfully!\n\n📊 This problem will appear in Problems section.\n\n💡 Tip: Add tags like "array", "recursion", etc. to make it appear in DSA Sheet.');
+      }
+      
       navigate('/problems');
     } catch (error) {
       console.error('Upload error:', error);

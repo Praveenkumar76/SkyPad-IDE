@@ -106,45 +106,23 @@ const ProblemSolver = () => {
 
   const fetchProblem = async () => {
     try {
-      // Check if it's a DSA sheet problem first
-      const dsaProblem = findDSAProblem(id);
-      if (dsaProblem) {
-        setProblem(dsaProblem.problem);
-        if (dsaProblem.problem.allowedLanguages.length > 0) {
-          setSelectedLanguage(dsaProblem.problem.allowedLanguages[0]);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Otherwise fetch from API
+      // Always fetch from DATABASE API (single source of truth)
       const response = await fetch(`${API_BASE_URL}/problems/${id}`);
       if (!response.ok) {
         throw new Error('Problem not found');
       }
       const data = await response.json();
       setProblem(data);
-      if (data.allowedLanguages.length > 0) {
+      if (data.allowedLanguages && data.allowedLanguages.length > 0) {
         setSelectedLanguage(data.allowedLanguages[0]);
       }
+      console.log('Problem loaded from database:', data.title);
     } catch (err) {
       setError('Failed to load problem');
       console.error('Error fetching problem:', err);
     } finally {
       setLoading(false);
     }
-  };
-
-  const findDSAProblem = (problemId) => {
-    // Search through all DSA sheet problems
-    for (const topicId in dsaSheetData.problems) {
-      const problems = dsaSheetData.problems[topicId];
-      const problem = problems.find(p => p.id === problemId);
-      if (problem) {
-        return problem;
-      }
-    }
-    return null;
   };
 
   const runCode = async () => {
