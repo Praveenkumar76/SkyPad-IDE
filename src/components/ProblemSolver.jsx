@@ -36,34 +36,66 @@ const ProblemSolver = () => {
   ];
 
   const defaultCode = {
-    'JavaScript': `function solve(input) {
-    // Write your solution here
-    return input;
-}`,
-    'Python': `def solve(input):
-    # Write your solution here
-    return input`,
-    'Java': `public class Solution {
-    public String solve(String input) {
-        // Write your solution here
-        return input;
+    'JavaScript': `// Read all of stdin
+const fs = require('fs');
+const input = fs.readFileSync(0, 'utf8').trim();
+
+// TODO: Parse input and solve the problem
+// Example echo:
+console.log(input);
+`,
+    'Python': `# Read all of stdin
+import sys
+data = sys.stdin.read().strip()
+
+# TODO: Parse input and solve the problem
+# Example echo:
+print(data)
+`,
+    'Java': `import java.io.*;
+import java.util.*;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        String input = new String(System.in.readAllBytes()).trim();
+        // TODO: Parse input and solve the problem
+        // Example echo:
+        System.out.print(input);
     }
-}`,
-    'C++': `#include <iostream>
-#include <string>
+}
+`,
+    'C++': `#include <bits/stdc++.h>
 using namespace std;
 
-string solve(string input) {
-    // Write your solution here
-    return input;
-}`,
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    string all, line;
+    while (getline(cin, line)) {
+        if (!all.empty()) all += "\n";
+        all += line;
+    }
+
+    // TODO: Parse input and solve the problem
+    // Example echo:
+    cout << all;
+    return 0;
+}
+`,
     'C': `#include <stdio.h>
 #include <string.h>
 
-char* solve(char* input) {
-    // Write your solution here
-    return input;
-}`
+int main() {
+    char buffer[1<<20];
+    size_t len = fread(buffer, 1, sizeof(buffer)-1, stdin);
+    buffer[len] = '\0';
+    // TODO: Parse input and solve the problem
+    // Example echo:
+    printf("%s", buffer);
+    return 0;
+}
+`
   };
 
   useEffect(() => {
