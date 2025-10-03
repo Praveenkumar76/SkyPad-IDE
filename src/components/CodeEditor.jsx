@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { MdPlayArrow, MdSettings, MdCode, MdLanguage, MdDownload, MdFileCopy, MdArrowBack } from 'react-icons/md';
@@ -47,24 +47,25 @@ const languageOptions = [
 
 
 const CodeEditor = () => {
+  const textAreaRef = useRef(null);
 
-  const [code, setCode] = useState(languageTemplates.javascript);
+  const [code, setCode] = useState(languageTemplates.javascript);
 
-  const [language, setLanguage] = useState('javascript');
+  const [language, setLanguage] = useState('javascript');
 
-  const [output, setOutput] = useState('');
+  const [output, setOutput] = useState('');
 
-  const [isRunning, setIsRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
 
-  const [showSettings, setShowSettings] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(16);
 
-  const [theme, setTheme] = useState('vs-dark');
+  const [theme, setTheme] = useState('vs-dark');
 
-  const [socket, setSocket] = useState(null);
+  const [socket, setSocket] = useState(null);
 
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
 
 

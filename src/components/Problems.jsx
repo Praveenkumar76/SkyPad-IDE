@@ -67,13 +67,15 @@ const Problems = () => {
     try {
       setLoading(true);
       // Fetch ALL problems from database (public endpoint, visible to all users)
-      const response = await fetch(`${API_BASE_URL}/problems?limit=1000`);
+      // Backend now defaults to limit=10000, so no need to specify
+      const response = await fetch(`${API_BASE_URL}/problems`);
       if (!response.ok) {
         throw new Error('Failed to fetch problems');
       }
       const data = await response.json();
       setProblems(data.problems || []);
-      console.log(`Loaded ${data.problems?.length || 0} problems from database (public, all users' uploads)`);
+      console.log(`✅ Loaded ${data.problems?.length || 0} problems from database (public, all users' uploads)`);
+      console.log(`📊 Total in DB: ${data.total || 0}`);
     } catch (err) {
       setError('Failed to load problems');
       console.error('Error fetching problems:', err);

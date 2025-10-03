@@ -69,12 +69,14 @@ const DSASheet = () => {
     try {
       setLoading(true);
       // Fetch ALL problems from database (public endpoint, no auth needed)
-      const response = await fetch(`${API_BASE_URL}/problems?limit=1000`);
+      // Backend defaults to limit=10000
+      const response = await fetch(`${API_BASE_URL}/problems`);
       
       if (response.ok) {
         const data = await response.json();
         const problems = data.problems || [];
-        console.log(`DSA Sheet: Loaded ${problems.length} problems from database (all users' uploads)`);
+        console.log(`✅ DSA Sheet: Loaded ${problems.length} problems from database (all users' uploads)`);
+        console.log(`📊 Total in DB: ${data.total || 0}`);
         
         const tagToTopic = {
           'recursion': 'recursion',
