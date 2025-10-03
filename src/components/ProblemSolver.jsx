@@ -417,21 +417,30 @@ const ProblemSolver = () => {
                   The test input shown below will be passed as stdin to your program.
                 </p>
               </div>
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-4">
+                <p className="text-yellow-300 text-sm">
+                  ⚠️ <strong>Notice:</strong> If input shows brackets like <code className="bg-black/30 px-1 rounded">[2, 2, 1]</code>, 
+                  your stdin will receive the <strong>exact string</strong> <code className="bg-black/30 px-1 rounded">[2, 2, 1]</code> including brackets. 
+                  You must parse it accordingly (remove brackets, split by comma, convert to integers).
+                </p>
+              </div>
               <div className="space-y-4">
                 {problem.sampleTestCases.map((testCase, index) => (
                   <div key={index} className="bg-black/20 rounded-lg p-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h4 className="text-sm font-medium text-gray-400 mb-2">Input (stdin):</h4>
-                        <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border">
+                        <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border font-mono">
                           {testCase.input}
                         </pre>
+                        <p className="text-xs text-gray-500 mt-1">Your program receives this exact string</p>
                       </div>
                       <div>
                         <h4 className="text-sm font-medium text-gray-400 mb-2">Expected Output (stdout):</h4>
-                        <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border">
+                        <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border font-mono">
                           {testCase.output}
                         </pre>
+                        <p className="text-xs text-gray-500 mt-1">Your program should print this</p>
                       </div>
                     </div>
                     {testCase.explanation && (
@@ -480,15 +489,30 @@ const ProblemSolver = () => {
           </div>
 
           <div className="flex-1 p-4 flex flex-col">
-            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-2 mb-2 text-xs text-yellow-300">
-              <strong>📝 Hint:</strong> {
-                selectedLanguage === 'JavaScript' ? 'Use fs.readFileSync(0, "utf8") to read stdin' :
-                selectedLanguage === 'Python' ? 'Use sys.stdin.read() or input() to read stdin' :
-                selectedLanguage === 'Java' ? 'Use Scanner or BufferedReader to read stdin' :
-                selectedLanguage === 'C++' ? 'Use cin or getline() to read stdin' :
-                selectedLanguage === 'C' ? 'Use scanf() or fgets() to read stdin' :
-                'Read from stdin and write to stdout'
-              }
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 mb-2 text-xs">
+              <p className="text-yellow-300 mb-2">
+                <strong>📝 Reading stdin in {selectedLanguage}:</strong>
+              </p>
+              {selectedLanguage === 'Python' && (
+                <pre className="text-yellow-200 bg-black/30 p-2 rounded mt-1 text-xs overflow-x-auto">
+{`import sys
+data = sys.stdin.read().strip()
+# If input is "[2, 2, 1]", parse it:
+data = data.strip('[]')  # Remove brackets
+arr = list(map(int, data.split(', ')))
+print(sum(arr))`}</pre>
+              )}
+              {selectedLanguage === 'JavaScript' && (
+                <pre className="text-yellow-200 bg-black/30 p-2 rounded mt-1 text-xs overflow-x-auto">
+{`const fs = require('fs');
+const input = fs.readFileSync(0, 'utf8').trim();
+// If input is "[2, 2, 1]", parse it:
+const arr = input.slice(1, -1).split(', ').map(Number);
+console.log(arr.reduce((a,b) => a+b, 0));`}</pre>
+              )}
+              {(selectedLanguage === 'Java' || selectedLanguage === 'C++' || selectedLanguage === 'C') && (
+                <p className="text-yellow-200 text-xs">Read the full stdin string and parse accordingly (remove brackets, split by delimiter)</p>
+              )}
             </div>
             <textarea
               value={code}
