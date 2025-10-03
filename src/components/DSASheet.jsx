@@ -11,7 +11,8 @@ import {
   MdTimer,
   MdCode,
   MdAssignment,
-  MdRefresh
+  MdRefresh,
+  MdArrowBack
 } from 'react-icons/md';
 
 const DSASheet = () => {
@@ -21,19 +22,22 @@ const DSASheet = () => {
   const [progress, setProgress] = useState({});
 
   useEffect(() => {
-    // Load solved problems from localStorage
-    const saved = localStorage.getItem('solvedProblems');
-    if (saved) {
-      setSolvedProblems(new Set(JSON.parse(saved)));
-    }
+    // Fetch solved problems from backend
+    fetchSolvedProblems();
     
     // Check for existing problems and add them to DSA sheet
     checkAndAddExistingProblems();
     
     // Listen for storage changes to refresh when new problems are added
     const handleStorageChange = (e) => {
-      if (e.key === 'dsaProblems') {
-        // Force re-render when DSA problems are updated
+      if (e.key === 'dsaProblems' || e.key === 'solvedProblems') {
+        // Force re-render when DSA problems or solved status are updated
+        if (e.key === 'solvedProblems') {
+          const saved = e.newValue;
+          if (saved) {
+            setSolvedProblems(new Set(JSON.parse(saved)));
+          }
+        }
         setProgress(prev => ({ ...prev }));
       }
     };
@@ -41,6 +45,7 @@ const DSASheet = () => {
     // Listen for custom DSA problems update event
     const handleDSAUpdate = () => {
       refreshDSASheet();
+      fetchSolvedProblems();
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -50,6 +55,31 @@ const DSASheet = () => {
       window.removeEventListener('dsaProblemsUpdated', handleDSAUpdate);
     };
   }, []);
+
+  const fetchSolvedProblems = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/solved`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSolvedProblems(new Set(data.solvedProblems || []));
+        
+        // Also sync to localStorage
+        localStorage.setItem('solvedProblems', JSON.stringify(data.solvedProblems || []));
+      }
+    } catch (error) {
+      console.error('Error fetching solved problems:', error);
+      // Fallback to localStorage
+      const saved = localStorage.getItem('solvedProblems');
+      if (saved) {
+        setSolvedProblems(new Set(JSON.parse(saved)));
+      }
+    }
+  };
 
   const checkAndAddExistingProblems = async () => {
     try {
@@ -156,8 +186,10 @@ const DSASheet = () => {
   }, [solvedProblems]);
 
   // Add a refresh function that can be called manually
-  const refreshDSASheet = () => {
-    checkAndAddExistingProblems();
+  const refreshDSASheet = async () => {
+    await checkAndAddExistingProblems();
+    await fetchSolvedProblems();
+    
     // Force progress recalculation
     const newProgress = {};
     dsaSheetData.topics.forEach(topic => {
@@ -203,11 +235,22 @@ const DSASheet = () => {
         {/* Header */}
         <div className="bg-black/20 backdrop-blur-md border-b border-white/10 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
-                DSA Sheet
-              </h1>
-              <p className="text-gray-300 mt-2">Master Data Structures and Algorithms systematically</p>
+            <div className="flex items-center space-x-4">
+              {/* Back Button */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/20 transition-colors"
+                title="Back to Dashboard"
+              >
+                <MdArrowBack className="w-6 h-6 text-white" />
+              </button>
+              
+              <div>
+                <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
+                  DSA Sheet
+                </h1>
+                <p className="text-gray-300 mt-2">Master Data Structures and Algorithms systematically</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <button

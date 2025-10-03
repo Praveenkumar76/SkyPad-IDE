@@ -10,7 +10,8 @@ import {
   MdCode,
   MdRefresh,
   MdExitToApp,
-  MdCopyAll
+  MdCopyAll,
+  MdArrowBack
 } from 'react-icons/md';
 
 const ChallengeRoom = () => {
@@ -376,11 +377,22 @@ const ChallengeRoom = () => {
         {/* Header */}
         <div className="bg-black/20 backdrop-blur-md border-b border-white/10 p-6 rounded-xl mb-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
-                Challenge Room: {roomName}
-              </h1>
-              <p className="text-gray-300 mt-1">Room ID: {roomId}</p>
+            <div className="flex items-center space-x-4">
+              {/* Back Button */}
+              <button
+                onClick={() => navigate('/challenges')}
+                className="p-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/20 transition-colors"
+                title="Back to Challenges"
+              >
+                <MdArrowBack className="w-6 h-6 text-white" />
+              </button>
+              
+              <div>
+                <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
+                  Challenge Room: {roomName}
+                </h1>
+                <p className="text-gray-300 mt-1">Room ID: {roomId}</p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <button

@@ -238,6 +238,8 @@ const QuestionUpload = () => {
 
       const result = await response.json();
       
+      console.log('Problem created successfully:', result);
+      
       // Add to DSA sheet based on tags
       addToDSASheet(result);
       
@@ -245,7 +247,7 @@ const QuestionUpload = () => {
       window.dispatchEvent(new CustomEvent('dsaProblemsUpdated'));
       
       alert('Question uploaded successfully and added to DSA sheet!');
-      navigate('/dsa-sheet');
+      navigate('/problems');
     } catch (error) {
       console.error('Upload error:', error);
       alert(error.message || 'Failed to upload question');

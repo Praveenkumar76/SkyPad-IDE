@@ -35,67 +35,13 @@ const ProblemSolver = () => {
     { value: 'C', label: 'C', extension: 'c' }
   ];
 
+  // Editor starts empty; users must write full solutions themselves
   const defaultCode = {
-    'JavaScript': `// Read all of stdin
-const fs = require('fs');
-const input = fs.readFileSync(0, 'utf8').trim();
-
-// TODO: Parse input and solve the problem
-// Example echo:
-console.log(input);
-`,
-    'Python': `# Read all of stdin
-import sys
-data = sys.stdin.read().strip()
-
-# TODO: Parse input and solve the problem
-# Example echo:
-print(data)
-`,
-    'Java': `import java.io.*;
-import java.util.*;
-
-public class Main {
-    public static void main(String[] args) throws Exception {
-        String input = new String(System.in.readAllBytes()).trim();
-        // TODO: Parse input and solve the problem
-        // Example echo:
-        System.out.print(input);
-    }
-}
-`,
-    'C++': `#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    string all, line;
-    while (getline(cin, line)) {
-        if (!all.empty()) all += "\n";
-        all += line;
-    }
-
-    // TODO: Parse input and solve the problem
-    // Example echo:
-    cout << all;
-    return 0;
-}
-`,
-    'C': `#include <stdio.h>
-#include <string.h>
-
-int main() {
-    char buffer[1<<20];
-    size_t len = fread(buffer, 1, sizeof(buffer)-1, stdin);
-    buffer[len] = '\0';
-    // TODO: Parse input and solve the problem
-    // Example echo:
-    printf("%s", buffer);
-    return 0;
-}
-`
+    JavaScript: '',
+    Python: '',
+    Java: '',
+    'C++': '',
+    C: ''
   };
 
   useEffect(() => {
@@ -113,6 +59,49 @@ int main() {
       setCode(defaultCode[selectedLanguage] || '');
     }
   }, [selectedLanguage, problem]);
+
+  // Auto-close pairs for (), {}, [], '', "", ``
+  const handleEditorKeyDown = (e) => {
+    const target = e.target;
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    const value = code;
+
+    const pairs = {
+      '(': ')',
+      '[': ']',
+      '{': '}',
+      '"': '"',
+      "'": "'",
+      '`': '`'
+    };
+
+    const key = e.key;
+    if (pairs[key]) {
+      e.preventDefault();
+      const insert = key + pairs[key];
+      const newValue = value.slice(0, start) + insert + value.slice(end);
+      setCode(newValue);
+      // place cursor between the pair
+      requestAnimationFrame(() => {
+        target.selectionStart = start + 1;
+        target.selectionEnd = start + 1;
+      });
+      return;
+    }
+
+    // If closing char typed and exactly next char matches, just move cursor over it
+    const closers = new Set(Object.values(pairs));
+    if (closers.has(key)) {
+      if (value[end] === key && start === end) {
+        e.preventDefault();
+        requestAnimationFrame(() => {
+          target.selectionStart = start + 1;
+          target.selectionEnd = start + 1;
+        });
+      }
+    }
+  };
 
   const fetchProblem = async () => {
     try {
@@ -229,12 +218,30 @@ int main() {
       const allTestsPass = [...runResult.sampleResults, ...runResult.hiddenResults].every(test => test.passed);
       
       if (allTestsPass) {
-        // Mark as solved
+        // Mark as solved in localStorage
         const solvedProblems = JSON.parse(localStorage.getItem('solvedProblems') || '[]');
         if (!solvedProblems.includes(id)) {
           solvedProblems.push(id);
           localStorage.setItem('solvedProblems', JSON.stringify(solvedProblems));
         }
+        
+        // Sync with backend
+        try {
+          await fetch(`${API_BASE_URL}/users/solved`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+              problemId: id,
+              language: selectedLanguage
+            })
+          });
+        } catch (syncError) {
+          console.error('Failed to sync solved status with backend:', syncError);
+        }
+        
         setIsSubmitted(true);
         setTestResults(runResult);
         alert('Congratulations! Problem solved successfully! 🎉');
@@ -469,6 +476,7 @@ int main() {
             <textarea
               value={code}
               onChange={(e) => setCode(e.target.value)}
+              onKeyDown={handleEditorKeyDown}
               className="w-full h-full bg-black/30 text-white font-mono text-sm p-4 rounded-lg border border-white/20 focus:outline-none focus:border-violet-400 resize-none"
               placeholder={`Write your ${selectedLanguage} solution here...`}
               spellCheck={false}
@@ -479,40 +487,75 @@ int main() {
           {testResults && (
             <div className="border-t border-white/10 p-4 bg-black/20">
               <h4 className="text-lg font-semibold text-white mb-3">Test Results</h4>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {testResults.sampleResults?.map((result, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-black/30 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      {getTestResultIcon(result.passed)}
-                      <span className="text-white">Sample Test {index + 1}</span>
+                  <div key={index} className="bg-black/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        {getTestResultIcon(result.passed)}
+                        <span className="text-white">Sample Test {index + 1}</span>
+                      </div>
+                      <div className={`text-sm ${result.passed ? 'text-green-400' : 'text-red-400'}`}>
+                        {result.passed ? 'Passed' : 'Failed'}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-300">
-                      {result.passed ? 'Passed' : 'Failed'}
-                    </div>
+                    {!result.passed && (
+                      <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div>
+                          <div className="text-gray-400 mb-1">Input</div>
+                          <pre className="bg-black/40 border rounded p-2 text-gray-200 whitespace-pre-wrap">{result.input}</pre>
+                        </div>
+                        <div>
+                          <div className="text-gray-400 mb-1">Expected</div>
+                          <pre className="bg-black/40 border rounded p-2 text-gray-200 whitespace-pre-wrap">{result.expectedOutput}</pre>
+                        </div>
+                        <div>
+                          <div className="text-gray-400 mb-1">Your Output</div>
+                          <pre className="bg-black/40 border rounded p-2 text-gray-200 whitespace-pre-wrap">{result.actualOutput}</pre>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
+
                 {testResults.hiddenResults && (
-                  <div className="mt-4">
-                    <h5 className="text-sm font-medium text-gray-400 mb-2">Hidden Tests:</h5>
-                    <div className="space-y-1">
-                      {testResults.hiddenResults.map((result, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-black/30 rounded-lg">
+                  <div className="mt-2 space-y-2">
+                    <h5 className="text-sm font-medium text-gray-400">Hidden Tests</h5>
+                    {testResults.hiddenResults.map((result, index) => (
+                      <div key={index} className="bg-black/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             {getTestResultIcon(result.passed)}
                             <span className="text-white text-sm">Hidden Test {index + 1}</span>
                           </div>
-                          <div className="text-sm text-gray-300">
+                          <div className={`text-sm ${result.passed ? 'text-green-400' : 'text-red-400'}`}>
                             {result.passed ? 'Passed' : 'Failed'}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                        {!result.passed && (
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <div className="text-gray-400 mb-1">Input</div>
+                              <pre className="bg-black/40 border rounded p-2 text-gray-200 whitespace-pre-wrap">{result.input}</pre>
+                            </div>
+                            <div>
+                              <div className="text-gray-400 mb-1">Expected</div>
+                              <pre className="bg-black/40 border rounded p-2 text-gray-200 whitespace-pre-wrap">{result.expectedOutput}</pre>
+                            </div>
+                            <div>
+                              <div className="text-gray-400 mb-1">Your Output</div>
+                              <pre className="bg-black/40 border rounded p-2 text-gray-200 whitespace-pre-wrap">{result.actualOutput}</pre>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
-                <div className="mt-4 p-3 bg-violet-500/20 rounded-lg">
-                  <div className="text-center text-white font-medium">
-                    Score: {testResults.score || 0}%
-                  </div>
+
+                <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-400">
+                  <div>Score: <span className="text-white">{testResults.score || 0}%</span></div>
+                  <div className="text-right">Time: {Math.round(testResults.executionTime || 0)}ms · Memory: {Math.round(testResults.memoryUsed || 0)}MB</div>
                 </div>
               </div>
             </div>

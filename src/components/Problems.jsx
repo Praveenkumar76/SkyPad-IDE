@@ -10,7 +10,9 @@ import {
   MdTag, 
   MdPerson,
   MdPlayArrow,
-  MdRefresh
+  MdRefresh,
+  MdArrowBack,
+  MdCheckCircle
 } from 'react-icons/md';
 
 const Problems = () => {
@@ -20,13 +22,38 @@ const Problems = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('All');
   const [error, setError] = useState('');
+  const [solvedProblems, setSolvedProblems] = useState(new Set());
 
   const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
 
   useEffect(() => {
     fetchProblems();
+    fetchSolvedProblems();
     addExistingProblemsToDSASheet();
   }, []);
+
+  const fetchSolvedProblems = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/solved`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSolvedProblems(new Set(data.solvedProblems || []));
+        
+        // Also sync to localStorage
+        localStorage.setItem('solvedProblems', JSON.stringify(data.solvedProblems || []));
+      }
+    } catch (error) {
+      console.error('Error fetching solved problems:', error);
+      // Fallback to localStorage
+      const localSolved = JSON.parse(localStorage.getItem('solvedProblems') || '[]');
+      setSolvedProblems(new Set(localSolved));
+    }
+  };
 
   const addExistingProblemsToDSASheet = async () => {
     try {
@@ -170,11 +197,22 @@ const Problems = () => {
         <div className="p-6">
           {/* Header and Search */}
           <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
-                All Problems
-              </h2>
-              <p className="text-gray-300 mt-2">Solve coding challenges and improve your skills</p>
+            <div className="flex items-center space-x-4">
+              {/* Back Button */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/20 transition-colors"
+                title="Back to Dashboard"
+              >
+                <MdArrowBack className="w-6 h-6 text-white" />
+              </button>
+              
+              <div>
+                <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
+                  All Problems
+                </h2>
+                <p className="text-gray-300 mt-2">Solve coding challenges and improve your skills</p>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -250,20 +288,27 @@ const Problems = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProblems.map((problem) => (
+              {filteredProblems.map((problem) => {
+                const isSolved = solvedProblems.has(problem._id);
+                return (
                 <div
                   key={problem._id}
-                  className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 hover:border-violet-400/50 transition-all duration-300 hover:scale-105 cursor-pointer group"
+                  className={`bg-white/10 backdrop-blur-md rounded-xl p-6 border transition-all duration-300 hover:scale-105 cursor-pointer group ${
+                    isSolved ? 'border-green-400/50 hover:border-green-400' : 'border-white/20 hover:border-violet-400/50'
+                  }`}
                   onClick={() => navigate(`/solve/${problem._id}`)}
                 >
                   <div className="space-y-4">
                     {/* Header */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-white group-hover:text-violet-300 transition-colors line-clamp-2">
-                          {problem.title}
-                        </h3>
-                        <div className="flex items-center space-x-2 mt-2">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-semibold text-white group-hover:text-violet-300 transition-colors line-clamp-2">
+                            {problem.title}
+                          </h3>
+                          {isSolved && <MdCheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />}
+                        </div>
+                        <div className="flex items-center space-x-2">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(problem.difficulty)}`}>
                             {problem.difficulty}
                           </span>
@@ -339,22 +384,42 @@ const Problems = () => {
                           e.stopPropagation();
                           navigate(`/solve/${problem._id}`);
                         }}
-                        className="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-all duration-300 hover:scale-105"
+                        className={`w-full px-4 py-2 rounded-lg font-medium flex items-center justify-center space-x-2 transition-all duration-300 hover:scale-105 ${
+                          isSolved 
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white'
+                            : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white'
+                        }`}
                       >
-                        <MdPlayArrow className="w-4 h-4" />
-                        <span>Solve Problem</span>
+                        {isSolved ? (
+                          <>
+                            <MdCheckCircle className="w-4 h-4" />
+                            <span>Solved ✓</span>
+                          </>
+                        ) : (
+                          <>
+                            <MdPlayArrow className="w-4 h-4" />
+                            <span>Solve Problem</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
 
           {/* Stats */}
           <div className="mt-12 text-center">
-            <div className="text-gray-400 text-sm">
-              Showing {filteredProblems.length} of {problems.length} problems
+            <div className="flex items-center justify-center space-x-6 text-sm">
+              <div className="text-gray-400">
+                Showing {filteredProblems.length} of {problems.length} problems
+              </div>
+              <div className="flex items-center space-x-2 text-green-400">
+                <MdCheckCircle className="w-4 h-4" />
+                <span>{solvedProblems.size} Solved</span>
+              </div>
             </div>
           </div>
         </div>

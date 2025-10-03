@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { MdPlayArrow, MdSettings, MdCode, MdLanguage, MdDownload, MdFileCopy } from 'react-icons/md';
+import { MdPlayArrow, MdSettings, MdCode, MdLanguage, MdDownload, MdFileCopy, MdArrowBack } from 'react-icons/md';
 
 import io from 'socket.io-client';
 
@@ -270,35 +271,44 @@ const CodeEditor = () => {
 
         <div className="p-6">
 
-          {/* Header */}
+          {/* Header */}
 
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8">
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3">
 
-              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              {/* Back Button */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/20 transition-colors"
+                title="Back to Dashboard"
+              >
+                <MdArrowBack className="w-6 h-6 text-white" />
+              </button>
 
-                <MdCode className="text-white w-7 h-7" />
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
 
-              </div>
+                <MdCode className="text-white w-7 h-7" />
 
-              <div>
+              </div>
 
-                <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 text-3xl font-bold">
+              <div>
 
-                  SkyPad Code Editor
+                <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 text-3xl font-bold">
 
-                </h1>
+                  SkyPad Code Editor
 
-                <p className="text-gray-300">Write, run, and collaborate on code</p>
+                </h1>
 
-              </div>
+                <p className="text-gray-300">Write, run, and collaborate on code</p>
 
-            </div>
+              </div>
 
-           
+            </div>
 
-            <div className="flex items-center space-x-4">
+           
+
+            <div className="flex items-center space-x-4">
 
               <div className="flex items-center space-x-2">
 

@@ -86,5 +86,34 @@ export const userAPI = {
     }
     
     return response.json();
+  },
+  
+  getSolvedProblems: async () => {
+    const response = await fetch(`${API_BASE_URL}/users/solved`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch solved problems');
+    }
+    
+    return response.json();
+  },
+  
+  markProblemSolved: async (problemId, language) => {
+    const response = await fetch(`${API_BASE_URL}/users/solved`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ problemId, language }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to mark problem as solved');
+    }
+    
+    return response.json();
   }
 };
