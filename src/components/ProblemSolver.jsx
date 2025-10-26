@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { 
   MdArrowBack, 
   MdPlayArrow, 
@@ -12,6 +13,8 @@ import {
   MdPerson
 } from 'react-icons/md';
 import { dsaSheetData } from '../data/dsaSheetData';
+import { userAPI } from '../utils/api';
+import BackButton from './BackButton';
 
 const ProblemSolver = () => {
   const { id } = useParams();
@@ -45,6 +48,22 @@ const ProblemSolver = () => {
     setIsSubmitted(solvedProblems.includes(id));
   };
 
+  const recordProblemSolve = async () => {
+    try {
+      return await userAPI.solveProblem({
+        problemId: id,
+        title: problem.title,
+        difficulty: problem.difficulty,
+        topic: problem.topic,
+        timeSpent: 0,
+        language: selectedLanguage
+      });
+    } catch (error) {
+      console.error('Error recording problem solve:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     // Keep code editor empty - users should write all code themselves
     if (problem && problem.allowedLanguages.includes(selectedLanguage)) {
@@ -66,7 +85,7 @@ const ProblemSolver = () => {
       }
 
       // Otherwise fetch from API
-      const response = await fetch(`http://localhost:5000/api/problems/${id}`);
+      const response = await fetch(`/api/problems/${id}`);
       if (!response.ok) {
         throw new Error('Problem not found');
       }
@@ -107,7 +126,7 @@ const ProblemSolver = () => {
     setActiveTab('output'); // Switch to output tab when running
 
     try {
-      const response = await fetch('http://localhost:5000/api/problems/run', {
+      const response = await fetch('/api/problems/run', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -145,7 +164,7 @@ const ProblemSolver = () => {
 
     try {
       // First run the code to check if it passes all tests
-      const runResponse = await fetch('http://localhost:5000/api/problems/run', {
+      const runResponse = await fetch('/api/problems/run', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +187,7 @@ const ProblemSolver = () => {
       const allTestsPass = [...runResult.sampleResults, ...runResult.hiddenResults].every(test => test.passed);
       
       if (allTestsPass) {
-        // Mark as solved in localStorage
+        // Mark as solved
         const solvedProblems = JSON.parse(localStorage.getItem('solvedProblems') || '[]');
         if (!solvedProblems.includes(id)) {
           solvedProblems.push(id);
@@ -177,7 +196,7 @@ const ProblemSolver = () => {
         
         // Record problem solve in backend
         try {
-          const recordResponse = await fetch('http://localhost:5000/api/users/solve-problem', {
+          const recordResponse = await fetch('/api/users/solve-problem', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -204,7 +223,6 @@ const ProblemSolver = () => {
         
         setIsSubmitted(true);
         setTestResults(runResult);
-        setActiveTab('output'); // Show output on submit
         alert('Congratulations! Problem solved successfully! 🎉');
       } else {
         setTestResults(runResult);
@@ -265,12 +283,7 @@ const ProblemSolver = () => {
       <div className="bg-black/20 backdrop-blur-md border-b border-white/10 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/problems')}
-              className="p-2 bg-white/10 backdrop-blur-md rounded-lg border border-white/20 hover:bg-white/20 transition-colors"
-            >
-              <MdArrowBack className="w-6 h-6 text-white" />
-            </button>
+            <BackButton to="/problems" text="Back to Problems" className="text-lg" />
             <div>
               <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
                 {problem.title}
@@ -385,7 +398,7 @@ const ProblemSolver = () => {
                       <div>
                         <h4 className="text-sm font-medium text-gray-400 mb-2">Expected Output:</h4>
                         <pre className="text-gray-300 text-sm bg-black/30 p-3 rounded border border-white/10">
-                          {testCase.output || testCase.expectedOutput}
+                          {testCase.expectedOutput}
                         </pre>
                       </div>
                     </div>
@@ -422,61 +435,70 @@ const ProblemSolver = () => {
 
         {/* Right Panel: Vertical Split (Code Editor + Results) */}
         <div className="w-1/2 flex flex-col">
-          {/* Code Editor - Top Half */}
-          <div className="flex-1 flex flex-col border-b border-white/10">
-            <div className="bg-black/20 backdrop-blur-md p-4 border-b border-white/10">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
-                  <MdCode className="w-5 h-5" />
-                  <span>Code Editor</span>
-                </h3>
-                <div className="text-sm text-gray-400">
-                  {selectedLanguage}
+          <PanelGroup direction="vertical">
+            {/* Code Editor Panel */}
+            <Panel defaultSize={50} minSize={20}>
+              <div className="h-full flex flex-col">
+                <div className="bg-black/20 backdrop-blur-md p-4 border-b border-white/10">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-white flex items-center space-x-2">
+                      <MdCode className="w-5 h-5" />
+                      <span>Code Editor</span>
+                    </h3>
+                    <div className="text-sm text-gray-400">
+                      {selectedLanguage}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-1 p-4 overflow-hidden">
+                  <textarea
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="w-full h-full bg-black/30 text-white font-mono text-sm p-4 rounded-lg border border-white/20 focus:outline-none focus:border-violet-400 resize-none"
+                    placeholder={`Write your ${selectedLanguage} solution here...`}
+                    spellCheck={false}
+                  />
                 </div>
               </div>
-            </div>
+            </Panel>
+            
+            {/* Resize Handle */}
+            <PanelResizeHandle className="h-2 bg-white/5 hover:bg-violet-500/50 transition-colors cursor-row-resize flex items-center justify-center group">
+              <div className="w-12 h-1 bg-white/20 group-hover:bg-violet-400 rounded-full transition-colors"></div>
+            </PanelResizeHandle>
 
-            <div className="flex-1 p-4 overflow-hidden">
-              <textarea
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="w-full h-full bg-black/30 text-white font-mono text-sm p-4 rounded-lg border border-white/20 focus:outline-none focus:border-violet-400 resize-none"
-                placeholder={`Write your ${selectedLanguage} solution here...`}
-                spellCheck={false}
-              />
-            </div>
-          </div>
+            {/* Results Section Panel */}
+            <Panel defaultSize={50} minSize={20}>
+              <div className="h-full flex flex-col">
+                {/* Tab Header */}
+                <div className="bg-black/20 backdrop-blur-md border-b border-white/10">
+                  <div className="flex space-x-1 p-2">
+                    <button
+                      onClick={() => setActiveTab('testcases')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === 'testcases'
+                          ? 'bg-violet-500/20 text-violet-300 border border-violet-500/50'
+                          : 'text-gray-400 hover:text-gray-300'
+                      }`}
+                    >
+                      Testcases
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('output')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === 'output'
+                          ? 'bg-violet-500/20 text-violet-300 border border-violet-500/50'
+                          : 'text-gray-400 hover:text-gray-300'
+                      }`}
+                    >
+                      Output
+                    </button>
+                  </div>
+                </div>
 
-          {/* Results Section - Bottom Half */}
-          <div className="flex-1 flex flex-col">
-            {/* Tab Header */}
-            <div className="bg-black/20 backdrop-blur-md border-b border-white/10">
-              <div className="flex space-x-1 p-2">
-                <button
-                  onClick={() => setActiveTab('testcases')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'testcases'
-                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/50'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  Testcases
-                </button>
-                <button
-                  onClick={() => setActiveTab('output')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === 'output'
-                      ? 'bg-violet-500/20 text-violet-300 border border-violet-500/50'
-                      : 'text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  Output
-                </button>
-              </div>
-            </div>
-
-            {/* Tab Content */}
-            <div className="flex-1 overflow-y-auto p-4 bg-black/10">
+                {/* Tab Content */}
+                <div className="flex-1 overflow-y-auto p-4 bg-black/10">
               {activeTab === 'testcases' && (
                 <div className="space-y-3">
                   {!testResults ? (
@@ -496,7 +518,7 @@ const ProblemSolver = () => {
                             <div>
                               <span className="text-xs text-gray-500">Expected Output:</span>
                               <pre className="text-gray-300 text-xs bg-black/30 p-2 rounded mt-1">
-                                {testCase.output || testCase.expectedOutput}
+                                {testCase.expectedOutput}
                               </pre>
                             </div>
                           </div>
@@ -677,8 +699,10 @@ const ProblemSolver = () => {
                   )}
                 </div>
               )}
-            </div>
-          </div>
+                </div>
+              </div>
+            </Panel>
+          </PanelGroup>
         </div>
       </div>
     </div>

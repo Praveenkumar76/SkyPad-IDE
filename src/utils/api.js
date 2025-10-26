@@ -1,9 +1,5 @@
-// The backend URL is now loaded from an environment variable.
-// It will use your public Render URL in production and fall back to localhost for local development.
-const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 
-  (window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000/api' 
-    : 'https://skypad-ide.onrender.com/api');
+// Use relative path to leverage Vite proxy
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || '/api';
 
 // Helper function to get auth headers
 const getAuthHeaders = () => {
@@ -123,5 +119,126 @@ export const userAPI = {
   }
 };
 
-// Log the API base URL on startup for debugging
-console.log('🌐 API Base URL:', API_BASE_URL);
+export const rewardsAPI = {
+  getProfile: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rewards/profile`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      
+      return await parseResponse(response, 'Fetch rewards profile');
+    } catch (error) {
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error when trying to reach backend:', error);
+        throw new Error(
+          `Cannot connect to backend server. ` +
+          `Please check if the backend is running at ${API_BASE_URL}`
+        );
+      }
+      throw error;
+    }
+  },
+
+  getShop: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rewards/shop`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      
+      return await parseResponse(response, 'Fetch shop items');
+    } catch (error) {
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error when trying to reach backend:', error);
+        throw new Error(
+          `Cannot connect to backend server. ` +
+          `Please check if the backend is running at ${API_BASE_URL}`
+        );
+      }
+      throw error;
+    }
+  },
+
+  purchaseItem: async (itemId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rewards/purchase`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ itemId }),
+      });
+      
+      return await parseResponse(response, 'Purchase item');
+    } catch (error) {
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error when trying to reach backend:', error);
+        throw new Error(
+          `Cannot connect to backend server. ` +
+          `Please check if the backend is running at ${API_BASE_URL}`
+        );
+      }
+      throw error;
+    }
+  },
+
+  activateBooster: async (itemId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rewards/activate-booster`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ itemId }),
+      });
+      
+      return await parseResponse(response, 'Activate booster');
+    } catch (error) {
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error when trying to reach backend:', error);
+        throw new Error(
+          `Cannot connect to backend server. ` +
+          `Please check if the backend is running at ${API_BASE_URL}`
+        );
+      }
+      throw error;
+    }
+  },
+
+  claimDaily: async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rewards/claim-daily`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+      
+      return await parseResponse(response, 'Claim daily reward');
+    } catch (error) {
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error when trying to reach backend:', error);
+        throw new Error(
+          `Cannot connect to backend server. ` +
+          `Please check if the backend is running at ${API_BASE_URL}`
+        );
+      }
+      throw error;
+    }
+  },
+
+  getLeaderboard: async (type = 'coins') => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rewards/leaderboard?type=${type}`, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+      
+      return await parseResponse(response, 'Fetch leaderboard');
+    } catch (error) {
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error when trying to reach backend:', error);
+        throw new Error(
+          `Cannot connect to backend server. ` +
+          `Please check if the backend is running at ${API_BASE_URL}`
+        );
+      }
+      throw error;
+    }
+  }
+};
