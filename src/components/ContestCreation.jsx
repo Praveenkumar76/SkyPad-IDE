@@ -268,7 +268,16 @@ const ContestCreation = () => {
         visibility: formData.visibility,
         questions: processedQuestions,
         timeSlots: formData.timeSlots,
-        allowedLanguages: formData.allowedLanguages.map(lang => lang.toLowerCase()),
+        allowedLanguages: formData.allowedLanguages.map(lang => {
+          const lowerLang = lang.toLowerCase();
+          // Map frontend language names to backend enum values
+          if (lowerLang === 'c++') return 'cpp';
+          if (lowerLang === 'javascript') return 'javascript';
+          if (lowerLang === 'python') return 'python';
+          if (lowerLang === 'java') return 'java';
+          if (lowerLang === 'c') return 'c';
+          return lowerLang;
+        }),
         maxParticipants: formData.maxParticipants ? parseInt(formData.maxParticipants) : null
       };
 
@@ -834,7 +843,7 @@ const ContestCreation = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <BackButton to="/challenges" text="Back to Challenges" />
+            <BackButton to="/contests" text="Back to Contests" />
             <div>
               <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400">
                 Create Contest
